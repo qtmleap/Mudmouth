@@ -18,7 +18,6 @@ import SwiftyLogger
 import UserNotifications
 
 final class ProxyHandler: NotificationHandler, ChannelDuplexHandler {
-
     typealias InboundIn = HTTPServerRequestPart
     typealias InboundOut = HTTPClientRequestPart
     typealias OutboundIn = HTTPClientResponsePart
@@ -82,8 +81,11 @@ final class ProxyHandler: NotificationHandler, ChannelDuplexHandler {
                         context.insert(record)
                         let host = queue.request.host
                         let existing = try? context.fetch(FetchDescriptor<RecordGroup>(predicate: #Predicate { $0.host == host })).first
-                        if let existing { existing.records.append(record) }
-                        else { context.insert(RecordGroup(host: host, records: [record])) }
+                        if let existing {
+                            existing.records.append(record)
+                        } else {
+                            context.insert(RecordGroup(host: host, records: [record]))
+                        }
                         do { try context.save() } catch { return }
                         guard CaptureAuthorization.isGranted, option.notify,
                               let path = URL(string: queue.request.path)?.path,

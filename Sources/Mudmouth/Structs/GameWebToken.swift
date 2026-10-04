@@ -16,7 +16,8 @@ public struct GameWebToken: Codable, Sendable {
     public init(_ value: String) throws {
         let values = value.split(separator: ".", omittingEmptySubsequences: false).map(String.init)
         guard values.count == 3, values.allSatisfy({ !$0.isEmpty }),
-              values.allSatisfy(Self.isBase64URL) else {
+              values.allSatisfy(Self.isBase64URL)
+        else {
             throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Invalid JWT format"))
         }
         let decoder = JSONDecoder()
@@ -27,7 +28,7 @@ public struct GameWebToken: Codable, Sendable {
 
     private static func isBase64URL(_ value: String) -> Bool {
         value.utf8.allSatisfy { byte in
-            (65...90).contains(byte) || (97...122).contains(byte) || (48...57).contains(byte) || byte == 45 || byte == 95
+            (65 ... 90).contains(byte) || (97 ... 122).contains(byte) || (48 ... 57).contains(byte) || byte == 45 || byte == 95
         }
     }
 

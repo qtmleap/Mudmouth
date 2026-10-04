@@ -1,0 +1,242 @@
+[
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Classes/Mudmouth.swift",
+        "line": 218,
+        "character": 40
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        let certificate: Certificate = try! .init(privateKey)"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Classes/Mudmouth.swift",
+        "line": 230,
+        "character": 40
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        let certificate: Certificate = try! .init("
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Classes/Mudmouth.swift",
+        "line": 266,
+        "character": 24
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "                return try! .init(privateKey)"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Extensions/Certificate.swift",
+        "line": 59,
+        "character": 39
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        let name: DistinguishedName = try! .init(builder: {"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Extensions/Certificate.swift",
+        "line": 67,
+        "character": 26
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        let extensions = try! Certificate.Extensions(builder: {"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Extensions/Certificate.swift",
+        "line": 96,
+        "character": 9
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        try! self.init(publicKey: publicKey, issuerPrivateKey: issuerPrivateKey, issuer: issuer, hosts: [host])"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Extensions/Certificate.swift",
+        "line": 100,
+        "character": 46
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        let siteSubject: DistinguishedName = try! .init(builder: {"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Extensions/Certificate.swift",
+        "line": 104,
+        "character": 26
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        let extensions = try! Certificate.Extensions(builder: {"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Extensions/Certificate.swift",
+        "line": 107,
+        "character": 13
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "            try! ExtendedKeyUsage([.serverAuth, .ocspSigning])"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Extensions/Certificate.swift",
+        "line": 115,
+        "character": 9
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        try! self.init("
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Models/ModelContainer.swift",
+        "line": 39,
+        "character": 16
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        return try! ModelContainer(for: RecordGroup.self, Record.self, configurations: config)"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Models/Record.swift",
+        "line": 266,
+        "character": 9
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        try! JSONSerialization.data(withJSONObject: dictionary)"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Structs/KeyPair.swift",
+        "line": 43,
+        "character": 16
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        return try! encoder.encode(self)"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Structs/KeyPair.swift",
+        "line": 48,
+        "character": 9
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        try! .init(configuration: try TLSConfiguration.makeServerConfiguration(certificateChain: ["
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Structs/ProxyTarget.swift",
+        "line": 98,
+        "character": 16
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        return try! encoder.encode(filter(\\.capture))"
+  },
+  {
+    "violation": {
+      "location": {
+        "file": "Sources/Mudmouth/Structs/ProxyTarget.swift",
+        "line": 114,
+        "character": 16
+      },
+      "ruleIdentifier": "force_try",
+      "ruleDescription": "Force tries should be avoided",
+      "ruleName": "Force Try",
+      "reason": "Force tries should be avoided",
+      "severity": "error"
+    },
+    "text": "        return try! encoder.encode(self)"
+  }
+]

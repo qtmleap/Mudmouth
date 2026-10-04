@@ -1,9 +1,8 @@
 name: Pull request code review by ChatGPT
+# Optional external AI review; the external OpenAI project is currently archived.
+# Human/agent code review remains required before integration. This workflow is
+# manually invoked and does not create an automatic pull-request gate.
 on:
-  pull_request:
-    types: [opened, reopened, ready_for_review, synchronize]
-  issue_comment:
-    types: [created, edited]
   workflow_dispatch:
 jobs:
   pr_agent_job:

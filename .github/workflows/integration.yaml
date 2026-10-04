@@ -31,28 +31,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install dependencies
+      - name: Install pinned lint tools
         run: |
-          brew install swiftlint swiftformat
+          mkdir -p "$RUNNER_TEMP/lint-tools"
+          curl -fsSL https://github.com/realm/SwiftLint/releases/download/0.59.1/portable_swiftlint.zip -o "$RUNNER_TEMP/swiftlint.zip"
+          curl -fsSL https://github.com/nicklockwood/SwiftFormat/releases/download/0.63.0/swiftformat.zip -o "$RUNNER_TEMP/swiftformat.zip"
+          unzip -oq "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/lint-tools"
+          unzip -oq "$RUNNER_TEMP/swiftformat.zip" -d "$RUNNER_TEMP/lint-tools"
+          echo "$RUNNER_TEMP/lint-tools" >> "$GITHUB_PATH"
       - name: Run SwiftLint
         run: |
           swiftlint
       - name: Run SwiftFormat in lint mode
         run: |
           swiftformat . --lint
-  test:
-    name: Test
-    runs-on: macos-15
-    if: github.event.action != 'closed' || github.event.pull_request.merged != true
+  ios-build:
+    name: iOS package build (Xcode 27)
+    runs-on: xcode-27
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: 16.4
-      - name: Build the Swift package
+      - name: Build the iOS Swift package
         run: |
-          swift build --build-tests
-      - name: Run tests
-        run: |
-          swift test
+          xcodebuild -version
+          xcodebuild build -scheme Mudmouth \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/MudmouthDerivedData" \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/MudmouthSourcePackages" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO
+      # Mudmouth has no SwiftPM test target. Interceptor's CI pins this package
+      # revision and runs its app integration unit and simulator UI tests.

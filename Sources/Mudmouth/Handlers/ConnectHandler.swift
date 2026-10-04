@@ -54,7 +54,8 @@ final class ConnectHandler: ChannelInboundHandler {
                             }
                             .flatMap { _ in
                                 channel.pipeline.addHandler(
-                                    ByteToMessageHandler(HTTPResponseDecoder(leftOverBytesStrategy: .forwardBytes)))
+                                    ByteToMessageHandler(HTTPResponseDecoder(leftOverBytesStrategy: .forwardBytes)),
+                                )
                             }
                         }
                         // swiftlint:disable:next force_unwrapping
@@ -76,7 +77,8 @@ final class ConnectHandler: ChannelInboundHandler {
                                     context.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
                                     context.pipeline.context(handlerType: HTTPResponseEncoder.self).whenComplete { lookup in
                                         guard case let .success(handler) = lookup,
-                                              context.channel.isActive, CaptureAuthorization.isGranted else {
+                                              context.channel.isActive, CaptureAuthorization.isGranted
+                                        else {
                                             client.close(promise: nil)
                                             context.close(promise: nil)
                                             return
@@ -135,7 +137,8 @@ final class ConnectHandler: ChannelInboundHandler {
         let components = head.uri.split(separator: ":", omittingEmptySubsequences: false)
         guard components.count == 2,
               let requestedPort = Int(components[1]), requestedPort == 443,
-              allowedHosts.contains(String(components[0]).lowercased()) else {
+              allowedHosts.contains(String(components[0]).lowercased())
+        else {
             let head = HTTPResponseHead(version: .http1_1, status: .forbidden,
                                         headers: HTTPHeaders([("Content-Length", "0"), ("Connection", "close")]))
             context.write(wrapOutboundOut(.head(head)), promise: nil)

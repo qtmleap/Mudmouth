@@ -51,7 +51,9 @@ final class LocalProxyChannels: @unchecked Sendable {
 
     func stop(generation expected: Int? = nil) -> [Channel] {
         lock.withLock {
-            if let expected, expected != generation { return [] }
+            if let expected, expected != generation {
+                return []
+            }
             running = false
             generation += 1
             let closing = Array(channels.values)
@@ -104,7 +106,7 @@ public enum MITM {
                             ByteToMessageHandler(HTTPRequestDecoder(leftOverBytesStrategy: .forwardBytes)),
                             HTTPResponseEncoder(),
                             ProxyHandler(options: targets),
-                        ], position: .last
+                        ], position: .last,
                     )
                 }
                 .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: 1)
@@ -115,7 +117,9 @@ public enum MITM {
                 throw CaptureAuthorization.Failure.consentRequired
             }
         } catch {
-            for channel in channels.stop(generation: generation) { try? await channel.close().get() }
+            for channel in channels.stop(generation: generation) {
+                try? await channel.close().get()
+            }
             throw error
         }
     }
@@ -124,6 +128,8 @@ public enum MITM {
         // Schedule every close before awaiting any one channel; closing a downstream
         // channel also closes its paired upstream connection through GlueHandler.
         let closing = channels.stop().map { $0.close() }
-        for result in closing { try? await result.get() }
+        for result in closing {
+            try? await result.get()
+        }
     }
 }

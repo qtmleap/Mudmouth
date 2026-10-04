@@ -194,7 +194,7 @@ public final class Mudmouth {
     @objc
     public func stopVPNTunnel() {
         SwiftyLogger.debug("Interceptor: Stopping VPN Tunnel")
-        /// 非同期関数はobjcで定義できないのでTaskでラップする
+        // 非同期関数はobjcで定義できないのでTaskでラップする
         Task(priority: .background, operation: {
             if let manager = try await NETunnelProviderManager.loadAllFromPreferences().first(where: { ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == self.bundleIdentifier }) {
                 manager.connection.stopVPNTunnel()
@@ -245,7 +245,8 @@ public final class Mudmouth {
         let legacy = Keychain(service: Bundle.main.bundleIdentifier!).synchronizable(true)
         for key in ["privateKey", "certificate"] {
             if (try? keychain.getData(key, ignoringAttributeSynchronizable: false)) == nil,
-               let data = try? legacy.getData(key, ignoringAttributeSynchronizable: false) {
+               let data = try? legacy.getData(key, ignoringAttributeSynchronizable: false)
+            {
                 try? keychain.set(data, key: key)
             }
         }
@@ -304,8 +305,8 @@ public final class Mudmouth {
         isTrusted = getTrusted()
         Task(priority: .background, operation: {
             self.isAuthorized = try await getAuthorized()
-            /// VPN設定を読み込んでマネージャをロードする
-            /// NOTE: VPN設定が有効かどうかのチェックはwillSetで実行するのでgetVPNInstalledは不要
+            // VPN設定を読み込んでマネージャをロードする
+            // NOTE: VPN設定が有効かどうかのチェックはwillSetで実行するのでgetVPNInstalledは不要
             self.manager = try await NETunnelProviderManager.loadAllFromPreferences().first(where: { ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == self.bundleIdentifier })
         })
     }

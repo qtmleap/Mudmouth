@@ -69,7 +69,9 @@ public class X509Proxy: ChannelInboundHandler, @unchecked Sendable {
                 timer.resume()
             }
         } catch {
-            for channel in channels.stop(generation: generation) { try? channel.close().wait() }
+            for channel in channels.stop(generation: generation) {
+                try? channel.close().wait()
+            }
             throw error
         }
     }
@@ -85,7 +87,9 @@ public class X509Proxy: ChannelInboundHandler, @unchecked Sendable {
             consentMonitor = nil
         }
         let closing = channels.stop().map { $0.close() }
-        for result in closing { try? result.wait() }
+        for result in closing {
+            try? result.wait()
+        }
     }
 
     init() {}

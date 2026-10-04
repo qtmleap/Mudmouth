@@ -249,7 +249,10 @@ public extension HTTP.Message {
 }
 
 public struct HTTPHeader: Identifiable, Hashable {
-    public var id: String { key }
+    public var id: String {
+        key
+    }
+
     public let key: String
     public let value: String
 }
