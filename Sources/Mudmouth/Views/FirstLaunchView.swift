@@ -15,6 +15,7 @@ public struct FirstLaunchView: View {
     @Environment(\.dismiss) var dismiss
     @State private var selection: Int = 0
     @State private var isPresented: Bool = false
+    @State private var setupError: String?
     private let proxy: X509Proxy = .default
 
     struct ConfirmationDialog<A: View, M: View, L: View>: View {
@@ -260,12 +261,7 @@ public struct FirstLaunchView: View {
                     case 2:
                         Button(action: {
                             Task(priority: .background, operation: {
-                                let granted: Bool = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert])
-                                if granted {
-                                    DispatchQueue.main.async {
-                                        UIApplication.shared.registerForRemoteNotifications()
-                                    }
-                                }
+                                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
                             })
                         }, label: {
                             Text("BUTTON_ALLOW_NOTIFICATION", bundle: .module)
@@ -296,7 +292,8 @@ public struct FirstLaunchView: View {
                         )
                     case 3:
                         Button(action: {
-                            isPresented.toggle()
+                            do { try proxy.start(); isPresented = true }
+                            catch { setupError = error.localizedDescription }
                         }, label: {
                             Text("BUTTON_DOWNLOAD_PROFILE", bundle: .module)
                                 .fontWeight(.bold)
@@ -364,13 +361,14 @@ public struct FirstLaunchView: View {
             })
             .buttonStyle(.borderedProminent)
         })
+        .safeAreaInset(edge: .top) {
+            HStack { Spacer(); Button { dismiss() } label: { Text("BUTTON_CLOSE", bundle: .module) }.padding() }
+        }
+        .alert("TITLE_SETUP_ERROR", isPresented: Binding(get: { setupError != nil }, set: { if !$0 { setupError = nil } })) {
+            Button("OK", role: .cancel) { setupError = nil }
+        } message: { Text(setupError ?? "") }
         .sheet(isPresented: $isPresented, content: {
             SafariView(url: .init(string: "http://127.0.0.1:8888")!)
-                .onAppear(perform: {
-                    Task(priority: .background, operation: {
-                        try proxy.start()
-                    })
-                })
                 .onDisappear(perform: {
                     Task(priority: .background, operation: {
                         try proxy.stop()

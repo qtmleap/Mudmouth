@@ -25,7 +25,7 @@ public struct ProxyTarget: Codable {
     }
 }
 
-public struct ProxyOption: Codable, Identifiable {
+public struct ProxyOption: Codable, Identifiable, Sendable {
     public var id: String { host }
     /// ホスト
     public var host: String
@@ -53,7 +53,7 @@ public struct ProxyOption: Codable, Identifiable {
     }
 }
 
-public struct ProxyPath: Codable, Identifiable {
+public struct ProxyPath: Codable, Identifiable, Sendable {
     public var id: String { path }
     public var path: String
     /// パスごとの通知設定

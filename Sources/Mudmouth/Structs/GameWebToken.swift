@@ -14,16 +14,34 @@ public struct GameWebToken: Codable, Sendable {
     public let signature: String
 
     public init(_ value: String) throws {
-        let values: [String] = value.split(separator: ".").map(String.init)
-        if values.count < 3 {
-            throw NSError(domain: "GameWebToken", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid JWT format"])
+        let values = value.split(separator: ".", omittingEmptySubsequences: false).map(String.init)
+        guard values.count == 3, values.allSatisfy({ !$0.isEmpty }),
+              values.allSatisfy(Self.isBase64URL) else {
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Invalid JWT format"))
         }
-        let data: [Data] = values.compactMap(\.base64DecodedString).compactMap { $0.data(using: .utf8) }
-        let decoder: JSONDecoder = .init()
-        decoder.dateDecodingStrategy = .secondsSince1970
-        header = try! decoder.decode(Header.self, from: data[0])
-        payload = try! decoder.decode(Payload.self, from: data[1])
+        let decoder = JSONDecoder()
+        header = try decoder.decode(Header.self, from: Self.decodeBase64URL(values[0]))
+        payload = try decoder.decode(Payload.self, from: Self.decodeBase64URL(values[1]))
         signature = values[2]
+    }
+
+    private static func isBase64URL(_ value: String) -> Bool {
+        value.utf8.allSatisfy { byte in
+            (65...90).contains(byte) || (97...122).contains(byte) || (48...57).contains(byte) || byte == 45 || byte == 95
+        }
+    }
+
+    private static func decodeBase64URL(_ value: String) throws -> Data {
+        guard value.count % 4 != 1 else {
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Invalid JWT encoding"))
+        }
+        let base64 = value.replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let padded = base64 + String(repeating: "=", count: (4 - base64.count % 4) % 4)
+        guard let data = Data(base64Encoded: padded) else {
+            throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Invalid JWT encoding"))
+        }
+        return data
     }
 
     public var isRefreshNeeded: Bool {

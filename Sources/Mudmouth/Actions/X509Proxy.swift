@@ -26,46 +26,66 @@ public class X509Proxy: ChannelInboundHandler, @unchecked Sendable {
         .init(string: "http://127.0.0.1:\(port)")!
     }
 
-    /// X509証明書インストール用のサーバーの起動
+    private let channels = LocalProxyChannels()
+    private let group: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    private let lifecycleLock = NSLock()
+    private let monitorLock = NSLock()
+    private var consentMonitor: DispatchSourceTimer?
+
+    /// Starts a loopback-only certificate server after explicit consent.
     func start() throws {
+        try lifecycleLock.withLock { try startServer() }
+    }
+
+    private func startServer() throws {
+        try CaptureAuthorization.requireConsent()
+        guard let generation = channels.begin() else { return }
         do {
-            SwiftyLogger.debug("Starting X509Proxy on port \(port)")
-            //        let privateKey: PrivateKey = try keychain.getPrivateKey()
-            let certificate: Certificate = try keychain.getCertificate()
-            let group = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-            let handler: CertificateHandler = .init(certificate: certificate)
-            let bootstrap = ServerBootstrap(group: group)
+            let certificate = try keychain.getCertificate()
+            let listener = try ServerBootstrap(group: group)
                 .serverChannelOption(ChannelOptions.socket(SOL_SOCKET, SO_REUSEADDR), value: 1)
                 .childChannelOption(ChannelOptions.socket(SOL_SOCKET, SO_REUSEADDR), value: 1)
-                .childChannelInitializer { channel in
-                    channel.pipeline.configureHTTPServerPipeline()
-                        .flatMap { _ in
-                            channel.pipeline.addHandler(handler)
+                .childChannelInitializer { [channels] channel in
+                    guard channels.register(channel, generation: generation) else { return channel.close() }
+                    return channel.pipeline.configureHTTPServerPipeline()
+                        .flatMap {
+                            channel.pipeline.addHandler(CertificateHandler(certificate: certificate))
                         }
                 }
-            // swiftlint:disable:next force_try
-            bootstrap.bind(to: try! SocketAddress(ipAddress: "127.0.0.1", port: port))
-                .whenComplete { [self] result in
-                    switch result {
-                        case .success:
-                            NSLog("Interceptor: Server bound to port \(port)")
-                        case let .failure(failure):
-                            NSLog("Interceptor: Failed to bind server: \(failure)")
-                            SwiftyLogger.error(failure)
-                    }
+                .bind(host: "127.0.0.1", port: port).wait()
+            guard channels.register(listener, generation: generation) else {
+                try? listener.close().wait()
+                throw CaptureAuthorization.Failure.consentRequired
+            }
+            monitorLock.withLock {
+                let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+                timer.schedule(deadline: .now(), repeating: .milliseconds(250))
+                timer.setEventHandler { [weak self] in
+                    guard !CaptureAuthorization.isGranted else { return }
+                    try? self?.stop()
                 }
+                consentMonitor?.cancel()
+                consentMonitor = timer
+                timer.resume()
+            }
         } catch {
-            SwiftyLogger.error("Failed to start X509Proxy: \(error)")
+            for channel in channels.stop(generation: generation) { try? channel.close().wait() }
             throw error
         }
     }
 
-    /// X509証明書インストール用のサーバーの停止
-    /// FIXME: 現状は停止しない
+    /// Closes the listener and all accepted connections; a later start can rebind.
     func stop() throws {
-        SwiftyLogger.debug("Stopping X509Proxy on port \(port)")
-        // Implement stopping logic if necessary
-        // This might involve shutting down the event loop group or closing channels
+        lifecycleLock.withLock { stopServer() }
+    }
+
+    private func stopServer() {
+        monitorLock.withLock {
+            consentMonitor?.cancel()
+            consentMonitor = nil
+        }
+        let closing = channels.stop().map { $0.close() }
+        for result in closing { try? result.wait() }
     }
 
     init() {}

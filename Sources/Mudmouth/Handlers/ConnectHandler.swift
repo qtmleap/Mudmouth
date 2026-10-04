@@ -21,6 +21,10 @@ final class ConnectHandler: ChannelInboundHandler {
     typealias InboundIn = HTTPServerRequestPart
     typealias OutboundOut = HTTPServerResponsePart
 
+    init(allowedHosts: Set<String>) {
+        self.allowedHosts = allowedHosts
+    }
+
     private func awaitingEnd(context: ChannelHandlerContext, data: NIOAny) {
         let httpData = unwrapInboundIn(data)
         if case .end = httpData {
@@ -29,9 +33,15 @@ final class ConnectHandler: ChannelInboundHandler {
             context.pipeline.context(handlerType: ByteToMessageHandler<HTTPRequestDecoder>.self)
                 // swiftlint:disable:next closure_body_length
                 .whenSuccess { handler in
+                    guard context.channel.isActive, CaptureAuthorization.isGranted else {
+                        context.close(promise: nil)
+                        return
+                    }
                     context.pipeline.removeHandler(context: handler, promise: nil)
                     ClientBootstrap(group: context.eventLoop)
                         .channelInitializer { channel in
+                            self.upstream = channel
+                            guard context.channel.isActive, CaptureAuthorization.isGranted else { return channel.close() }
                             let clientConfiguration = TLSConfiguration.makeClientConfiguration()
                             // swiftlint:disable:next force_try
                             let sslClientContext = try! NIOSSLContext(configuration: clientConfiguration)
@@ -52,6 +62,11 @@ final class ConnectHandler: ChannelInboundHandler {
                         .whenComplete { result in
                             switch result {
                                 case let .success(client):
+                                    guard context.channel.isActive, CaptureAuthorization.isGranted else {
+                                        client.close(promise: nil)
+                                        context.close(promise: nil)
+                                        return
+                                    }
                                     // Send 200 to downstream.
                                     let headers = HTTPHeaders([("Content-Length", "0")])
                                     let head = HTTPResponseHead(
@@ -59,7 +74,13 @@ final class ConnectHandler: ChannelInboundHandler {
                                     )
                                     context.write(self.wrapOutboundOut(.head(head)), promise: nil)
                                     context.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-                                    context.pipeline.context(handlerType: HTTPResponseEncoder.self).whenSuccess { handler in
+                                    context.pipeline.context(handlerType: HTTPResponseEncoder.self).whenComplete { lookup in
+                                        guard case let .success(handler) = lookup,
+                                              context.channel.isActive, CaptureAuthorization.isGranted else {
+                                            client.close(promise: nil)
+                                            context.close(promise: nil)
+                                            return
+                                        }
                                         context.pipeline.removeHandler(context: handler, promise: nil)
                                         let (localGlue, remoteGlue) = GlueHandler.matchedPair()
                                         context.pipeline.addHandler(localGlue)
@@ -67,9 +88,15 @@ final class ConnectHandler: ChannelInboundHandler {
                                             .whenComplete { result in
                                                 switch result {
                                                     case .success:
+                                                        guard context.channel.isActive, CaptureAuthorization.isGranted else {
+                                                            client.close(promise: nil)
+                                                            context.close(promise: nil)
+                                                            return
+                                                        }
                                                         self.state = .established
                                                     case let .failure(failure):
                                                         SwiftyLogger.error(failure)
+                                                        client.close(promise: nil)
                                                         context.close(promise: nil)
                                                 }
                                             }
@@ -105,15 +132,29 @@ final class ConnectHandler: ChannelInboundHandler {
             context.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
             return
         }
-        let components = head.uri.split(separator: ":")
-        host = String(components[0])
-        // swiftlint:disable:next force_unwrapping
-        port = Int(components[1])!
+        let components = head.uri.split(separator: ":", omittingEmptySubsequences: false)
+        guard components.count == 2,
+              let requestedPort = Int(components[1]), requestedPort == 443,
+              allowedHosts.contains(String(components[0]).lowercased()) else {
+            let head = HTTPResponseHead(version: .http1_1, status: .forbidden,
+                                        headers: HTTPHeaders([("Content-Length", "0"), ("Connection", "close")]))
+            context.write(wrapOutboundOut(.head(head)), promise: nil)
+            let channel = context.channel
+            context.writeAndFlush(wrapOutboundOut(.end(nil))).whenComplete { _ in channel.close(promise: nil) }
+            return
+        }
+        host = String(components[0]).lowercased()
+        port = requestedPort
         state = .awaitingEnd
     }
 
     // swiftlint:disable:next function_body_length
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        guard CaptureAuthorization.isGranted else {
+            upstream?.close(promise: nil)
+            context.close(promise: nil)
+            return
+        }
         switch state {
             case .idle:
                 idle(context: context, data: data)
@@ -125,6 +166,17 @@ final class ConnectHandler: ChannelInboundHandler {
         }
     }
 
+    func channelInactive(context: ChannelHandlerContext) {
+        upstream?.close(promise: nil)
+        upstream = nil
+        context.fireChannelInactive()
+    }
+
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
+        upstream?.close(promise: nil)
+        context.close(promise: nil)
+    }
+
     // MARK: Private
 
     private enum State {
@@ -133,6 +185,8 @@ final class ConnectHandler: ChannelInboundHandler {
         case established
     }
 
+    private let allowedHosts: Set<String>
+    private var upstream: Channel?
     private var state: State = .idle
     private var host: String?
     private var port: Int?

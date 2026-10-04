@@ -23,7 +23,7 @@ extension Keychain {
 
     /// CA証明書鍵
     func getPrivateKey() throws -> Certificate.PrivateKey {
-        guard let data: Data = try getData("privateKey")
+        guard let data: Data = try getData("privateKey", ignoringAttributeSynchronizable: false)
         else {
             throw DecodingError.valueNotFound(P256.Signing.PublicKey.self, .init(codingPath: [], debugDescription: ""))
         }
@@ -32,7 +32,7 @@ extension Keychain {
 
     /// CA証明書
     func getCertificate() throws -> Certificate {
-        guard let data: Data = try getData("certificate")
+        guard let data: Data = try getData("certificate", ignoringAttributeSynchronizable: false)
         else {
             throw DecodingError.valueNotFound(Certificate.self, .init(codingPath: [], debugDescription: ""))
         }
