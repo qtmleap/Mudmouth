@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start-agents",
+      "type": "shell",
+      // Open the tmux session (orchestrator / implementer / codex) as soon as the
+      // folder opens. VS Code has no per-task property for terminal location, so the
+      // editor-area placement comes from "terminal.integrated.defaultLocation" in
+      // settings.json (microsoft/vscode#212070).
+      //
+      // Guarded because this file is copied into every project: repositories without
+      // .devcontainer/start-agents.sh must not get a failing task on open.
+      "command": "[ -x .devcontainer/start-agents.sh ] && exec .devcontainer/start-agents.sh || true",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        // This terminal owns tmux: never auto-close it, and do not echo the command.
+        "echo": false,
+        "close": false,
+        "clear": true,
+        // Show it without stealing focus from the editor.
+        "focus": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}
