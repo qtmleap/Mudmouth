@@ -1,4 +1,6 @@
-xcluded:
+# Only legacy force_try violations are baselined; new violations remain checked.
+baseline: .swiftlint-baseline.json
+excluded:
   - Packages/
   - Package.pins
   - Package.resolved

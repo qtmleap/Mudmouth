@@ -10,7 +10,10 @@ import Foundation
 
 /// Nintendo Switch AppのコンテンツIDを定義する列挙型
 public enum ContentId: Int64, CaseIterable, Codable, Identifiable {
-    public var id: Int64 { rawValue }
+    public var id: Int64 {
+        rawValue
+    }
+
     /// スプラトゥーン2
     case SP2 = 5_741_031_244_955_648
     /// スプラトゥーン3

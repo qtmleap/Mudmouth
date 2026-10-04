@@ -31,7 +31,11 @@ public extension ModelContainer {
 //            }
 //        }
 //         #endif
-        let config: ModelConfiguration = .init(url: dbURL)
+        var excluded = URLResourceValues()
+        excluded.isExcludedFromBackup = true
+        var storage = container
+        try? storage.setResourceValues(excluded)
+        let config: ModelConfiguration = .init(url: dbURL, cloudKitDatabase: .none)
         return try! ModelContainer(for: RecordGroup.self, Record.self, configurations: config)
     }()
 }

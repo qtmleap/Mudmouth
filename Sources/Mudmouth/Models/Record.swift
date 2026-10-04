@@ -27,6 +27,7 @@ public final class RecordGroup: Identifiable {
 @Model
 public final class Record: Identifiable {
     @Attribute(.unique) public var id: UUID
+    public var capturedAt: Date = Date()
     public var method: String
     public var path: String
     public var host: RecordGroup?
@@ -248,7 +249,10 @@ public extension HTTP.Message {
 }
 
 public struct HTTPHeader: Identifiable, Hashable {
-    public var id: String { key }
+    public var id: String {
+        key
+    }
+
     public let key: String
     public let value: String
 }

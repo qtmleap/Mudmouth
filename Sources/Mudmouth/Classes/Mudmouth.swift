@@ -46,9 +46,9 @@ public final class Mudmouth {
     }
 
     public static let `default`: Mudmouth = .init()
-    // iCloud Keychainを利用する
+    // 新規データはこの端末のみのKeychainに保存する
     // NOTE: ライブラリを利用するアプリのバンドルIDで初期化
-    private let keychain: Keychain = .init(service: Bundle.main.bundleIdentifier!).synchronizable(true)
+    private let keychain: Keychain = .init(service: Bundle.main.bundleIdentifier!).synchronizable(false).accessibility(.afterFirstUnlockThisDeviceOnly)
     private let port: Int = 16_836
     private let bundleIdentifier: String = "\(Bundle.main.bundleIdentifier!).packet-tunnel"
     private let generator: UINotificationFeedbackGenerator = .init()
@@ -125,6 +125,7 @@ public final class Mudmouth {
     /// NOTE: isVPNInstalledを更新する
     /// NOTE: マネージャがそもそもなければどうなるんだ感はあるが、新しく作られまくる心配がない
     func installVPN() async throws {
+        try CaptureAuthorization.requireConsent()
         // 既に作成されていたら何もしない
         if manager != nil {
             return
@@ -161,12 +162,12 @@ public final class Mudmouth {
 
     /// VPNトンネルを開始する
     public func startVPNTunnel(options: [ProxyOption]) async throws {
+        try CaptureAuthorization.requireConsent()
         SwiftyLogger.debug("Interceptor: Starting VPN Tunnel")
         // 一応マネージャーがあるかをチェックする
-        guard let manager = try await NETunnelProviderManager.loadAllFromPreferences().first
+        guard let manager = try await NETunnelProviderManager.loadAllFromPreferences().first(where: { ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == self.bundleIdentifier })
         else {
-            SwiftyLogger.error("Interceptor: No VPN manager found")
-            return
+            throw NSError(domain: "Mudmouth", code: 1, userInfo: [NSLocalizedDescriptionKey: "Set up the Interceptor VPN before starting capture."])
         }
         // キャプチャするドメインを指定して鍵を生成する
         let keyPair: KeyPair = generateSiteKeyPair(hosts: options.targets(keyPath: \.capture))
@@ -175,11 +176,12 @@ public final class Mudmouth {
         // 何をしているのかはよくわからない
         try await manager.saveToPreferences()
         SwiftyLogger.debug("Interceptor: VPN Manager configured")
-        SwiftyLogger.debug("Interceptor: Starting VPN Tunnel with options: \(keyPair)")
+
         SwiftyLogger.debug("Interceptor: \(NEVPNConnectionStartOptionPassword)")
         // サイト用の証明書をパスワードに同梱し、アプリに渡す
         // ついでにターゲット情報も渡す
         // ターゲットに合致したときにキャプチャしたパケットを渡す仕組み
+        try CaptureAuthorization.requireConsent()
         try manager.connection.startVPNTunnel(options: [
             NEVPNConnectionProxyTargets: options.data as NSObject,
             NEVPNConnectionStartOptionPassword: keyPair.data as NSObject,
@@ -192,9 +194,9 @@ public final class Mudmouth {
     @objc
     public func stopVPNTunnel() {
         SwiftyLogger.debug("Interceptor: Stopping VPN Tunnel")
-        /// 非同期関数はobjcで定義できないのでTaskでラップする
+        // 非同期関数はobjcで定義できないのでTaskでラップする
         Task(priority: .background, operation: {
-            if let manager = try await NETunnelProviderManager.loadAllFromPreferences().first {
+            if let manager = try await NETunnelProviderManager.loadAllFromPreferences().first(where: { ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == self.bundleIdentifier }) {
                 manager.connection.stopVPNTunnel()
                 generator.notificationOccurred(.success)
             }
@@ -240,6 +242,14 @@ public final class Mudmouth {
         #else
         SwiftyLogger.debug("Mudmouth: Initializing in RELEASE mode")
         #endif
+        let legacy = Keychain(service: Bundle.main.bundleIdentifier!).synchronizable(true)
+        for key in ["privateKey", "certificate"] {
+            if (try? keychain.getData(key, ignoringAttributeSynchronizable: false)) == nil,
+               let data = try? legacy.getData(key, ignoringAttributeSynchronizable: false)
+            {
+                try? keychain.set(data, key: key)
+            }
+        }
         privateKey = {
             guard let privateKey = try? keychain.getPrivateKey()
             else {
@@ -252,12 +262,13 @@ public final class Mudmouth {
             guard let certificate = try? keychain.getCertificate()
             else {
                 SwiftyLogger.warning("No certificate found, generating a new one")
-                SwiftyLogger.debug(privateKey.derRepresentation.hexString)
-                SwiftyLogger.debug(self.privateKey.derRepresentation.hexString)
+
                 return try! .init(privateKey)
             }
             return certificate
         }()
+        try? keychain.setPrivateKey(privateKey)
+        try? keychain.setCertificate(certificate)
         NotificationCenter.default.addObserver(self, selector: #selector(statusDidChange), name: .NEVPNStatusDidChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(willEnterForegroundNotification), name: UIApplication.willEnterForegroundNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(didEnterBackgroundNotification), name: UIApplication.didEnterBackgroundNotification, object: nil)
@@ -294,9 +305,9 @@ public final class Mudmouth {
         isTrusted = getTrusted()
         Task(priority: .background, operation: {
             self.isAuthorized = try await getAuthorized()
-            /// VPN設定を読み込んでマネージャをロードする
-            /// NOTE: VPN設定が有効かどうかのチェックはwillSetで実行するのでgetVPNInstalledは不要
-            self.manager = try await NETunnelProviderManager.loadAllFromPreferences().first
+            // VPN設定を読み込んでマネージャをロードする
+            // NOTE: VPN設定が有効かどうかのチェックはwillSetで実行するのでgetVPNInstalledは不要
+            self.manager = try await NETunnelProviderManager.loadAllFromPreferences().first(where: { ($0.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == self.bundleIdentifier })
         })
     }
 }

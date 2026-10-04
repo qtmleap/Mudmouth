@@ -10,51 +10,52 @@ import BetterSafariView
 import SwiftUI
 import SwiftUIIntrospect
 
+private struct ConfirmationDialog<A: View, M: View, L: View>: View {
+    @State private var isPresented: Bool = false
+    let role: ButtonRole?
+    let label: () -> L
+    let title: Text
+    let titleVisibility: Visibility
+    let actions: () -> A
+    let message: () -> M
+
+    init(
+        role: ButtonRole? = nil,
+        @ViewBuilder label: @escaping () -> L,
+        title: Text,
+        titleVisibility: Visibility = .automatic,
+        @ViewBuilder actions: @escaping () -> A,
+        @ViewBuilder message: @escaping () -> M = { EmptyView() },
+    ) {
+        self.role = role
+        self.label = label
+        self.title = title
+        self.titleVisibility = titleVisibility
+        self.message = message
+        self.actions = actions
+    }
+
+    var body: some View {
+        Button(role: role, action: {
+            isPresented.toggle()
+        }, label: {
+            label()
+        })
+        .confirmationDialog(title, isPresented: $isPresented, titleVisibility: .visible, actions: {
+            actions()
+        }, message: {
+            message()
+        })
+    }
+}
+
 public struct FirstLaunchView: View {
     @Environment(Mudmouth.self) private var mudmouth: Mudmouth
     @Environment(\.dismiss) var dismiss
     @State private var selection: Int = 0
     @State private var isPresented: Bool = false
+    @State private var setupError: String?
     private let proxy: X509Proxy = .default
-
-    struct ConfirmationDialog<A: View, M: View, L: View>: View {
-        @State private var isPresented: Bool = false
-        let role: ButtonRole?
-        let label: () -> L
-        let title: Text
-        let titleVisibility: Visibility
-        let actions: () -> A
-        let message: () -> M
-
-        init(
-            role: ButtonRole? = nil,
-            @ViewBuilder label: @escaping () -> L,
-            title: Text,
-            titleVisibility: Visibility = .automatic,
-            @ViewBuilder actions: @escaping () -> A,
-            @ViewBuilder message: @escaping () -> M = { EmptyView() },
-        ) {
-            self.role = role
-            self.label = label
-            self.title = title
-            self.titleVisibility = titleVisibility
-            self.message = message
-            self.actions = actions
-        }
-
-        var body: some View {
-            Button(role: role, action: {
-                isPresented.toggle()
-            }, label: {
-                label()
-            })
-            .confirmationDialog(title, isPresented: $isPresented, titleVisibility: .visible, actions: {
-                actions()
-            }, message: {
-                message()
-            })
-        }
-    }
 
     var isEnabled: Bool {
         #if targetEnvironment(simulator)
@@ -62,21 +63,21 @@ public struct FirstLaunchView: View {
         #else
         switch selection {
             case 1:
-            mudmouth.isAPPInstalled
+                mudmouth.isAPPInstalled
             case 2:
-            mudmouth.isAuthorized
+                mudmouth.isAuthorized
             case 3:
-            true
+                true
             case 4:
-            mudmouth.isVerified
+                mudmouth.isVerified
             case 5:
-            mudmouth.isTrusted
+                mudmouth.isTrusted
             case 6:
-            mudmouth.isVPNInstalled
+                mudmouth.isVPNInstalled
             case 7:
-            mudmouth.isConnected
+                mudmouth.isConnected
             default:
-            true
+                true
         }
         #endif
     }
@@ -260,12 +261,7 @@ public struct FirstLaunchView: View {
                     case 2:
                         Button(action: {
                             Task(priority: .background, operation: {
-                                let granted: Bool = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert])
-                                if granted {
-                                    DispatchQueue.main.async {
-                                        UIApplication.shared.registerForRemoteNotifications()
-                                    }
-                                }
+                                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
                             })
                         }, label: {
                             Text("BUTTON_ALLOW_NOTIFICATION", bundle: .module)
@@ -296,7 +292,8 @@ public struct FirstLaunchView: View {
                         )
                     case 3:
                         Button(action: {
-                            isPresented.toggle()
+                            do { try proxy.start(); isPresented = true }
+                            catch { setupError = error.localizedDescription }
                         }, label: {
                             Text("BUTTON_DOWNLOAD_PROFILE", bundle: .module)
                                 .fontWeight(.bold)
@@ -364,13 +361,18 @@ public struct FirstLaunchView: View {
             })
             .buttonStyle(.borderedProminent)
         })
+        .safeAreaInset(edge: .top) {
+            HStack { Spacer(); Button { dismiss() } label: { Text("BUTTON_CLOSE", bundle: .module) }.padding() }
+        }
+        .alert("TITLE_SETUP_ERROR", isPresented: Binding(get: { setupError != nil }, set: {
+            if !$0 {
+                setupError = nil
+            }
+        })) {
+            Button("OK", role: .cancel) { setupError = nil }
+        } message: { Text(setupError ?? "") }
         .sheet(isPresented: $isPresented, content: {
             SafariView(url: .init(string: "http://127.0.0.1:8888")!)
-                .onAppear(perform: {
-                    Task(priority: .background, operation: {
-                        try proxy.start()
-                    })
-                })
                 .onDisappear(perform: {
                     Task(priority: .background, operation: {
                         try proxy.stop()
@@ -383,6 +385,7 @@ public struct FirstLaunchView: View {
 struct FirstLaunch<Content: View>: View {
     let content: () -> Content
 
+    // swiftformat:disable:next redundantMemberwiseInit
     init(@ViewBuilder content: @escaping () -> Content) {
         self.content = content
     }

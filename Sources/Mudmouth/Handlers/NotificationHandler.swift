@@ -13,7 +13,7 @@ import NIOHTTP1
 import UserNotifications
 
 class NotificationHandler {
-//    @MainActor
+    ///    @MainActor
     func requestNotification(request: HTTP.Request) async throws {
         let content: UNMutableNotificationContent = .init()
         content.title = NSLocalizedString("TOKEN_CAPTURED_TITLE", bundle: .module, comment: "")
