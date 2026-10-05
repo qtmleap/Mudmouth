@@ -358,13 +358,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Install the Nintendo Switch App to use this app."
+            "value" : "Nintendo Switch App can generate supported Nintendo traffic for inspection. Installing it is optional; you can continue certificate and VPN setup without it."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "本アプリの利用のためにNintendo Switch Appをインストールしてください。"
+            "value" : "Nintendo Switch Appは、対応する任天堂サービスの通信を取得するために利用できます。インストールは任意です。インストールせずに証明書とVPNの設定へ進めます。"
           }
         }
       }
@@ -535,13 +535,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Using Interceptor requires the Nintendo Switch App and an active Nintendo Switch Online membership."
+            "value" : "Some Nintendo services require a Nintendo Switch Online membership. Interceptor itself does not require the app or a membership to continue setup."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Interceptorの利用にはNintendo Switch Appのインストール及び、Nintendo Switch Onlineの契約が必要です。"
+            "value" : "任天堂のサービスによってはNintendo Switch Onlineへの加入が必要です。Interceptorのセットアップには、アプリのインストールや加入は必要ありません。"
           }
         }
       }

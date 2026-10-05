@@ -62,10 +62,9 @@ public struct FirstLaunchView: View {
         return true
         #else
         switch selection {
-            case 1:
-                mudmouth.isAPPInstalled
-            case 2:
-                mudmouth.isAuthorized
+            // Installing a traffic source and enabling notifications are optional.
+            case 1, 2:
+                true
             case 3:
                 true
             case 4:
