@@ -8,7 +8,6 @@
 
 import BetterSafariView
 import SwiftUI
-import SwiftUIIntrospect
 
 private struct ConfirmationDialog<A: View, M: View, L: View>: View {
     @State private var isPresented: Bool = false
