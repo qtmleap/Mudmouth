@@ -342,13 +342,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Download the profile to your device."
+            "value" : "Download the certificate profile, then tap Next to install it in Settings."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "プロファイルをデバイスにダウンロードしてください。"
+            "value" : "証明書のプロファイルをダウンロードし、「つぎへ」をタップして設定アプリでインストールします。"
           }
         }
       }
@@ -374,13 +374,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Install the VPN configuration profile to capture requests."
+            "value" : "Add the Interceptor VPN configuration and allow it when iOS asks. Adding the configuration does not start capture; you will turn it on in the next step."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "リクエストを取得するためのVPN構成プロファイルをインストールしてください。"
+            "value" : "InterceptorのVPN構成を追加し、iOSの確認画面で許可してください。追加しただけでは通信のキャプチャは始まりません。次の手順で有効にします。"
           }
         }
       }
@@ -390,13 +390,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Install it manually via Settings > General > VPN & Device Management > Downloaded Profile."
+            "value" : "Open Settings > General > VPN & Device Management. Select the downloaded Interceptor profile and follow the installation steps, then return to this app."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "設定 > 一般 > VPNとデバイス管理 > ダウンロード済みプロファイル から手動でインストールしてください。"
+            "value" : "設定 > 一般 > VPNとデバイス管理を開きます。ダウンロードしたInterceptorのプロファイルを選び、手順に従ってインストールしたら、このアプリに戻ってください。"
           }
         }
       }
@@ -438,13 +438,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Manually trust it via Settings > General > About > Certificate Trust Settings > Enable Full Trust for Root Certificates."
+            "value" : "Open Settings > General > About > Certificate Trust Settings. Enable full trust only for the Interceptor certificate you just installed, then return to this app."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "設定 > 一般 > 情報 > 証明書信頼設定 > ルート証明書を全面的に信頼 から手動で信頼してください。"
+            "value" : "設定 > 一般 > 情報 > 証明書信頼設定を開きます。先ほどインストールしたInterceptorの証明書だけを全面的に信頼し、このアプリに戻ってください。"
           }
         }
       }
@@ -1270,6 +1270,166 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "キャプチャを設定できません"
+          }
+        }
+      }
+    },
+    "BUTTON_BACK" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "戻る"
+          }
+        }
+      }
+    },
+    "BUTTON_OK" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "BUTTON_OPEN_SETTINGS" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定を開く"
+          }
+        }
+      }
+    },
+    "LABEL_STEP_OF %lld %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step %1$lld of %2$lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ステップ %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "LABEL_SETUP_STEP_READY": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This step is complete. You can continue."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この手順は完了しています。次に進めます。"
+          }
+        }
+      }
+    },
+    "LABEL_SETUP_STEP_REQUIRED": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete this step before continuing."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "この手順の設定を完了すると、次に進めます。"
+          }
+        }
+      }
+    },
+    "LABEL_NOTIFICATION_CHECKING" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking notification status…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通知の状態を確認しています…"
+          }
+        }
+      }
+    },
+    "LABEL_NOTIFICATION_GRANTED" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications are on."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通知はオンです。"
+          }
+        }
+      }
+    },
+    "LABEL_NOTIFICATION_DENIED" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications are off. You can turn them on in Settings."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通知はオフです。設定アプリでオンにできます。"
+          }
+        }
+      }
+    },
+    "TITLE_NOTIFICATION_ERROR" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to Request Notifications"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通知を許可できません"
           }
         }
       }
