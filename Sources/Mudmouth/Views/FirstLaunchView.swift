@@ -308,7 +308,7 @@ public struct FirstLaunchView: View {
         })
         .multilineTextAlignment(.center)
         .safeAreaInset(edge: .top) {
-            HStack { Spacer(); Button { dismiss() } label: { Text("BUTTON_CLOSE", bundle: .module) }.padding() }
+            HStack { Spacer(); Button { dismiss() } label: { Text("BUTTON_CLOSE", bundle: .module).foregroundStyle(Color.primary) }.padding() }
                 .background(.background)
         }
         .alert(Text("TITLE_SETUP_ERROR", bundle: .module), isPresented: Binding(get: { setupError != nil }, set: {
