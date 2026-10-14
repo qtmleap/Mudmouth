@@ -10,7 +10,7 @@ import BetterSafariView
 import SwiftUI
 
 private enum CertificateDownloadLifecycle {
-    // Enqueue start and stop immediately in UI event order, without blocking the UI.
+    /// Enqueue start and stop immediately in UI event order, without blocking the UI.
     private static let queue = DispatchQueue(label: "Mudmouth.CertificateDownload")
 
     static func start(_ proxy: X509Proxy, completion: @escaping @MainActor @Sendable (String?) -> Void) {
@@ -235,8 +235,11 @@ public struct FirstLaunchView: View {
                     CertificateDownloadLifecycle.start(proxy) { message in
                         isDownloading = false
                         guard isActive else { return }
-                        if let message { setupError = message }
-                        else { isPresented = true }
+                        if let message {
+                            setupError = message
+                        } else {
+                            isPresented = true
+                        }
                     }
                 }, label: {
                     actionLabel("BUTTON_DOWNLOAD_PROFILE")
