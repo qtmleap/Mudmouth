@@ -84,6 +84,7 @@ public struct FirstLaunchView: View {
 
     @Environment(Mudmouth.self) private var mudmouth: Mudmouth
     @Environment(\.dismiss) var dismiss
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var selection: Int
     @State private var isPresented: Bool = false
     @State private var setupError: String?
@@ -286,13 +287,15 @@ public struct FirstLaunchView: View {
         ScrollView(content: {
             VStack(spacing: 12, content: {
                 pageHeader
-                pageControls
-                    .buttonStyle(.borderedProminent)
-                Button(action: advance, label: {
-                    actionLabel(isLastPage ? "BUTTON_END" : "BUTTON_NEXT")
-                })
+                VStack(spacing: 12) {
+                    pageControls
+                    Button(action: advance, label: {
+                        actionLabel(isLastPage ? "BUTTON_END" : "BUTTON_NEXT")
+                    })
+                    .disabled(!isEnabled || isDownloading)
+                }
                 .buttonStyle(.borderedProminent)
-                .disabled(!isEnabled || isDownloading)
+                .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? 560 : 320)
             })
             .frame(maxWidth: 560)
             .frame(maxWidth: .infinity)
