@@ -518,7 +518,6 @@ extension FirstLaunchView {
                         // Pushes the actions to the bottom when the content fits the viewport.
                         Spacer(minLength: 24)
                         VStack(spacing: 12) {
-                            pageControls
                             if (4 ... 7).contains(selection) {
                                 Label {
                                     Text(isEnabled ? "LABEL_SETUP_STEP_READY" : "LABEL_SETUP_STEP_REQUIRED", bundle: .module)
@@ -528,6 +527,7 @@ extension FirstLaunchView {
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                             }
+                            pageControls
                         }
                         .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? 560 : 320)
                     })
