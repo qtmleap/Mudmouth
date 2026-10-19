@@ -13,11 +13,17 @@ let package = Package(
             name: "Mudmouth",
             targets: ["Mudmouth"],
         ),
+        // Pure NIO transport seam. It has no UIKit/SwiftData dependency so host tests can build it alone.
+        .library(
+            name: "MudmouthHTTPHooks",
+            targets: ["MudmouthHTTPHooks"],
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-certificates.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
         .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0"),
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.2.0"),
         .package(url: "https://github.com/qtmleap/swifty-logger.git", exact: "2.1.1"),
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess.git", from: "4.2.2"),
         .package(url: "https://github.com/stleamist/BetterSafariView.git", from: "2.4.2"),
@@ -27,13 +33,26 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
+            name: "MudmouthHTTPHooks",
+            dependencies: [
+                .product(name: "NIOCore", package: "swift-nio"),
+                .product(name: "NIOHTTP1", package: "swift-nio"),
+            ],
+            swiftSettings: [
+                // Handler state is confined to one NIO event loop, which Swift 6 checking cannot express.
+                .swiftLanguageMode(.v5),
+            ],
+        ),
+        .target(
             name: "Mudmouth",
             dependencies: [
+                "MudmouthHTTPHooks",
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "NIOHTTP1", package: "swift-nio"),
                 .product(name: "SwiftyLogger", package: "swifty-logger"),
+                .product(name: "DequeModule", package: "swift-collections"),
                 .product(name: "NIOSSL", package: "swift-nio-ssl"),
                 .product(name: "KeychainAccess", package: "KeychainAccess"),
                 .product(name: "BetterSafariView", package: "BetterSafariView"),
