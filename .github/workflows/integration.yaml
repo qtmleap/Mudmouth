@@ -61,5 +61,14 @@ jobs:
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/MudmouthSourcePackages" \
             -onlyUsePackageVersionsFromResolvedFile \
             -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO
-      # Mudmouth has no SwiftPM test target. Interceptor's CI pins this package
-      # revision and runs its app integration unit and simulator UI tests.
+      # Interceptor's CI pins this package revision and runs app integration tests.
+  http-hooks:
+    name: HTTP hook transport tests
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test the pure NIO transport
+        run: |
+          swift --version
+          swift test --package-path Tests/HTTPHooksHarness --force-resolved-versions --jobs 4

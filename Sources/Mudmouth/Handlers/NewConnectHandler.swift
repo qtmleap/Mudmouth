@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import MudmouthHTTPHooks
 import NIOCore
 import NIOHTTP1
 import NIOPosix
