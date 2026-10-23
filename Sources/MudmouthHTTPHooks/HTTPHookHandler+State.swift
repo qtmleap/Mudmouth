@@ -55,6 +55,8 @@ extension HTTPHookHandler {
         var promises: [EventLoopPromise<Void>?]
         var bodies: [(buffer: ByteBuffer, promise: EventLoopPromise<Void>?)] = []
         var bytes = 0
+        /// Single gzip member: observed decoded at leave only, never handed to enter or mutated.
+        var isGzip = false
         let exchange: Exchange
     }
 

@@ -42,6 +42,7 @@ let package = Package(
                 // Handler state is confined to one NIO event loop, which Swift 6 checking cannot express.
                 .swiftLanguageMode(.v5),
             ],
+            linkerSettings: [.linkedLibrary("z")],
         ),
         .target(
             name: "Mudmouth",

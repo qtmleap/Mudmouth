@@ -18,6 +18,7 @@ let package = Package(
                 .product(name: "NIOHTTP1", package: "swift-nio"),
             ],
             swiftSettings: [.swiftLanguageMode(.v5)],
+            linkerSettings: [.linkedLibrary("z")],
         ),
         .testTarget(
             name: "MudmouthHTTPHooksTests",

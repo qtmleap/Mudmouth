@@ -752,6 +752,12 @@ private extension HTTPHookHandler {
         {
             collectedResponse = CollectedResponse(head: head, promises: [promise], exchange: exchange)
             responseStage = .collecting
+        } else if processor != nil, !outboundBypass, let exchange, exchange.request != nil, !exchange.isHead,
+                  code != 204, code != 304,
+                  HTTPHookMessage.hasEligibleGzipBodyHeaders(head.headers, maxBody: limits.bodyBytes)
+        {
+            collectedResponse = CollectedResponse(head: head, promises: [promise], isGzip: true, exchange: exchange)
+            responseStage = .collecting
         } else {
             observeResponse(.head(head))
             forwardResponsePart(.head(head), promise: promise, context: context)
@@ -784,6 +790,22 @@ private extension HTTPHookHandler {
                 var lengthMatches = true
                 if case let .contentLength(length) = HTTPHookMessage.framing(collected.head.headers) {
                     lengthMatches = length == original.count
+                }
+                if collected.isGzip {
+                    // The collected wire bytes are no longer counted; the decoded copy must fit what is left.
+                    let cap = min(limits.bodyBytes, limits.bufferedBytes - bufferedTotal - original.count)
+                    guard trailers == nil, lengthMatches,
+                          let decoded = HTTPHookGzip.decode(original, maxOutput: cap), HTTPHookJSON.isEligible(decoded)
+                    else {
+                        replayResponse(collected, end: (trailers, promise), context: context)
+                        return
+                    }
+                    collected.promises.append(promise)
+                    let observed = HTTPPluginResponse(
+                        status: Int(collected.head.status.code), headers: HTTPHookMessage.decodedHeaders(collected.head.headers), body: decoded,
+                    )
+                    forwardCollectedResponse(collected, original: original, replacement: nil, observationalResponse: observed, context: context)
+                    return
                 }
                 guard trailers == nil, lengthMatches, HTTPHookJSON.isEligible(original) else {
                     replayResponse(collected, end: (trailers, promise), context: context)
@@ -866,11 +888,16 @@ private extension HTTPHookHandler {
         drainOutbound(context)
     }
 
-    func forwardCollectedResponse(_ collected: CollectedResponse, original: Data, replacement: Data?, context: ChannelHandlerContext) {
+    /// A non-nil `observationalResponse` (decoded gzip) is only reported to leave: the wire bytes are forwarded
+    /// unchanged and `replacement` is ignored, so mutation is impossible on that path.
+    func forwardCollectedResponse(
+        _ collected: CollectedResponse, original: Data, replacement: Data?,
+        observationalResponse: HTTPPluginResponse? = nil, context: ChannelHandlerContext,
+    ) {
         var head = collected.head
         var bodies = collected.bodies.map(\.buffer)
         var forwarded = original
-        if let replacement, replacement != original, HTTPHookJSON.isEligible(replacement),
+        if observationalResponse == nil, let replacement, replacement != original, HTTPHookJSON.isEligible(replacement),
            original.count <= limits.bufferedBytes - bufferedTotal,
            replacement.count <= limits.bufferedBytes - bufferedTotal - original.count
         {
@@ -878,7 +905,7 @@ private extension HTTPHookHandler {
             bodies = [ByteBuffer(bytes: replacement)]
             forwarded = replacement
         }
-        let response = HTTPPluginResponse(
+        let response = observationalResponse ?? HTTPPluginResponse(
             status: Int(head.status.code), headers: HTTPHookMessage.lowercasedHeaders(head.headers), body: forwarded,
         )
         let originals = collected.promises + collected.bodies.map(\.promise)

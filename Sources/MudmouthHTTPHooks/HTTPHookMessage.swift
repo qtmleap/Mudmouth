@@ -91,6 +91,31 @@ enum HTTPHookMessage {
         headers[canonicalForm: "content-encoding"].allSatisfy { $0.lowercased() == "identity" }
     }
 
+    /// Exactly one `gzip` coding (case/whitespace-insensitive) and nothing else.
+    static func isSingleGzipEncoding(_ headers: HTTPHeaders) -> Bool {
+        let values = headers["content-encoding"]
+        return values.count == 1 && values[0].trimmingCharacters(in: .whitespaces).lowercased() == "gzip"
+    }
+
+    /// Same framing/type rules as `hasEligibleBodyHeaders`, for a body whose only coding is one gzip.
+    static func hasEligibleGzipBodyHeaders(_ headers: HTTPHeaders, maxBody: Int) -> Bool {
+        switch framing(headers) {
+            case let .contentLength(length) where length >= 1 && length <= maxBody: break
+            case .chunked: break
+            default: return false
+        }
+        return isJSONContentType(headers) && isSingleGzipEncoding(headers)
+    }
+
+    /// Observation-only headers for a decoded body: the coding and its framing no longer apply.
+    static func decodedHeaders(_ headers: HTTPHeaders) -> [String: String] {
+        var decoded = lowercasedHeaders(headers)
+        decoded["content-encoding"] = nil
+        decoded["content-length"] = nil
+        decoded["transfer-encoding"] = nil
+        return decoded
+    }
+
     /// Headers alone decide whether a body may be handed to a plugin. The body itself is validated once complete.
     static func hasEligibleBodyHeaders(_ headers: HTTPHeaders, maxBody: Int) -> Bool {
         switch framing(headers) {

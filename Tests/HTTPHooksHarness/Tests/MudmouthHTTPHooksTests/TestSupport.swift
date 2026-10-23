@@ -390,6 +390,8 @@ final class Rig {
     let downstreamControl: ControlledWriteHandler<HTTPServerResponsePart>
     private(set) var sentUpstream: [Wire] = []
     private(set) var sentDownstream: [Wire] = []
+    /// Raw downstream body bytes in write order. `Wire.body` is a lossy String, so binary payloads are compared here.
+    private(set) var sentDownstreamRawBodies: [Data] = []
 
     private init(
         loop: NIOAsyncTestingEventLoop, downstream: NIOAsyncTestingChannel, upstream: NIOAsyncTestingChannel,
@@ -483,6 +485,9 @@ final class Rig {
     func collectDownstream() async throws -> [Wire] {
         while let part = try await downstream.readOutbound(as: HTTPServerResponsePart.self) {
             sentDownstream.append(Wire(part))
+            if case let .body(.byteBuffer(buffer)) = part {
+                sentDownstreamRawBodies.append(Data(buffer.readableBytesView))
+            }
         }
         return sentDownstream
     }
