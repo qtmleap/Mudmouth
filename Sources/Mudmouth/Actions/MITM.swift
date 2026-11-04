@@ -80,7 +80,7 @@ public enum MITM {
     private static let group: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     private static let channels = LocalProxyChannels()
 
-    public static func startTunnel(options: [String: NSObject]? = nil) async throws {
+    public static func startTunnel(options: [String: NSObject]? = nil, eventSink: CaptureLifecycleSink? = nil) async throws {
         try CaptureAuthorization.requireConsent()
         let decoder = JSONDecoder()
         guard let options,
@@ -95,17 +95,18 @@ public enum MITM {
                 .serverChannelOption(ChannelOptions.backlog, value: 256)
                 .serverChannelOption(ChannelOptions.socket(SOL_SOCKET, SO_REUSEADDR), value: 1)
                 .childChannelInitializer { channel in
+                    let captureContext = CaptureConnectionContext()
                     guard channels.register(channel, generation: generation) else { return channel.close() }
                     return channel.pipeline.addHandlers(
                         [
                             CaptureConsentHandler(),
                             ByteToMessageHandler(HTTPRequestDecoder(leftOverBytesStrategy: .forwardBytes)),
                             HTTPResponseEncoder(),
-                            ConnectHandler(allowedHosts: Set(targets.filter(\.capture).map { $0.host.lowercased() })),
+                            ConnectHandler(allowedHosts: Set(targets.filter(\.capture).map { $0.host.lowercased() }), captureContext: captureContext),
                             NIOSSLServerHandler(context: keyPair.context),
                             ByteToMessageHandler(HTTPRequestDecoder(leftOverBytesStrategy: .forwardBytes)),
                             HTTPResponseEncoder(),
-                            ProxyHandler(options: targets),
+                            ProxyHandler(options: targets, captureContext: captureContext, eventSink: eventSink),
                         ], position: .last,
                     )
                 }

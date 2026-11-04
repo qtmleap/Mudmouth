@@ -40,5 +40,6 @@ let package = Package(
                 .product(name: "Gzip", package: "GzipSwift"),
             ],
         ),
+        .testTarget(name: "MudmouthTests", dependencies: ["Mudmouth", .product(name: "NIOEmbedded", package: "swift-nio")]),
     ],
 )

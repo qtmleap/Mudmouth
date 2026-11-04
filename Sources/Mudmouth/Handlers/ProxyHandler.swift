@@ -25,25 +25,44 @@ final class ProxyHandler: NotificationHandler, ChannelDuplexHandler {
 
     private let options: [ProxyOption]
 
-    init(options: [ProxyOption] = []) {
+    init(options: [ProxyOption] = [], captureContext: CaptureConnectionContext? = nil, eventSink: CaptureLifecycleSink? = nil) {
         self.options = options
+        self.captureContext = captureContext
+        self.eventSink = eventSink
     }
 
-    private var queues: Deque<HTTP.MessageContainer> = []
+    private let captureContext: CaptureConnectionContext?
+    private let eventSink: CaptureLifecycleSink?
+    private var capture: CaptureLifecycleAccumulator?
+    private struct LegacyExchange {
+        var message: HTTP.MessageContainer?
+    }
+
+    private var queues: Deque<LegacyExchange> = []
+    private var informationalResponse = false
 
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         guard CaptureAuthorization.isGranted else { context.close(promise: nil); return }
         let httpData = unwrapInboundIn(data)
         switch httpData {
             case let .head(head):
-                queues.append(.init(request: .init(head: head)))
+                if capture == nil, let authority = captureContext?.authority, let eventSink {
+                    capture = CaptureLifecycleAccumulator(authority: authority, sink: eventSink)
+                }
+                capture?.requestHead(method: head.method.rawValue, encodedTarget: head.uri,
+                                     headers: head.headers.lazy.map { HeaderField(name: $0.name, value: $0.value) })
+                // Keep a placeholder for malformed requests so pipelined responses
+                // cannot be associated with a different recorded request.
+                queues.append(.init(message: head.host == nil ? nil : .init(request: .init(head: head))))
                 context.fireChannelRead(wrapInboundOut(.head(head)))
 
             case let .body(body):
-                queues.last?.request.add(body)
+                capture?.requestBody(body.readableBytesView)
+                queues.last?.message?.request.add(body)
                 context.fireChannelRead(wrapInboundOut(.body(.byteBuffer(body))))
 
             case .end:
+                capture?.requestEnd()
                 context.fireChannelRead(wrapInboundOut(.end(nil)))
         }
     }
@@ -57,21 +76,29 @@ final class ProxyHandler: NotificationHandler, ChannelDuplexHandler {
         let httpData = unwrapOutboundIn(data)
         switch httpData {
             case let .head(head):
-                if var queue = queues.popFirst() {
-                    queue.response = .init(head: head)
+                capture?.responseHead(status: Int(head.status.code), headers: head.headers.lazy.map { HeaderField(name: $0.name, value: $0.value) })
+                informationalResponse = (100 ..< 200).contains(head.status.code) && head.status.code != 101
+                if !informationalResponse, var queue = queues.popFirst() {
+                    queue.message?.response = .init(head: head)
                     queues.prepend(queue)
                 }
                 context.write(wrapOutboundOut(.head(head)), promise: promise)
 
             case let .body(body):
-                if var message = queues.popFirst() {
-                    message.response?.add(body)
-                    queues.prepend(message)
+                capture?.responseBody(body.readableBytesView)
+                if !informationalResponse, let message = queues.first {
+                    message.message?.response?.add(body)
                 }
                 context.write(wrapOutboundOut(.body(.byteBuffer(body))), promise: promise)
 
             case .end:
-                if let queue = queues.popFirst() {
+                capture?.responseEnd()
+                if informationalResponse {
+                    informationalResponse = false
+                    context.write(wrapOutboundOut(.end(nil)), promise: promise)
+                    return
+                }
+                if let queue = queues.popFirst()?.message {
                     guard CaptureAuthorization.isGranted,
                           let option = options.first(where: { $0.capture && $0.host == queue.request.host }) else { context.write(wrapOutboundOut(.end(nil)), promise: promise); return }
                     Task { @MainActor in
@@ -110,5 +137,14 @@ final class ProxyHandler: NotificationHandler, ChannelDuplexHandler {
         }
     }
 
-    func channelInactive(context _: ChannelHandlerContext) {}
+    func channelInactive(context: ChannelHandlerContext) {
+        capture?.finish()
+        queues.removeAll()
+        context.fireChannelInactive()
+    }
+
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
+        capture?.finish()
+        context.fireErrorCaught(error)
+    }
 }
