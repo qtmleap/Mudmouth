@@ -21,8 +21,9 @@ final class ConnectHandler: ChannelInboundHandler {
     typealias InboundIn = HTTPServerRequestPart
     typealias OutboundOut = HTTPServerResponsePart
 
-    init(allowedHosts: Set<String>) {
+    init(allowedHosts: Set<String>, captureContext: CaptureConnectionContext? = nil) {
         self.allowedHosts = allowedHosts
+        self.captureContext = captureContext
     }
 
     private func awaitingEnd(context: ChannelHandlerContext, data: NIOAny) {
@@ -146,6 +147,7 @@ final class ConnectHandler: ChannelInboundHandler {
             context.writeAndFlush(wrapOutboundOut(.end(nil))).whenComplete { _ in channel.close(promise: nil) }
             return
         }
+        captureContext?.authority = CaptureHTTPSAuthority(connectAuthority: head.uri)
         host = String(components[0]).lowercased()
         port = requestedPort
         state = .awaitingEnd
@@ -189,6 +191,7 @@ final class ConnectHandler: ChannelInboundHandler {
     }
 
     private let allowedHosts: Set<String>
+    private let captureContext: CaptureConnectionContext?
     private var upstream: Channel?
     private var state: State = .idle
     private var host: String?
